@@ -161,5 +161,5 @@ def save_to_excel(data, filename="data/people.csv"):
         os.makedirs(directory, exist_ok=True)
 
     pd.DataFrame(data).to_csv(filename, index=False)
-    print(f"\n✅ Data saved to: {filename}")
+    print(f"\nData saved to: {filename}")
     print(f"Total profiles scraped: {len(data)}")
