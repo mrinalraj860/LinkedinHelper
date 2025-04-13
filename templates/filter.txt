@@ -1,0 +1,2 @@
+location: India, Bangalore, United Kingdom, London, New York
+current_company: Microsoft, Amazon, FICO, Google
