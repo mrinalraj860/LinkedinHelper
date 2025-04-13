@@ -31,6 +31,7 @@ def main():
     parser.add_argument('--query_url', help='Search query URL')
     parser.add_argument('--send', action='store_true', help='Send messages too')
     parser.add_argument('--pages', type=int, default=3, help='Number of pages to scrape')
+    parser.add_argument('--connect', action='store_true', help='Send connection request too')
     args = parser.parse_args()
 
     if args.mode == 'cli':

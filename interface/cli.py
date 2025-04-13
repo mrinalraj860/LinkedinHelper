@@ -20,7 +20,7 @@ def run_cli(args):
     for term in keywords:
         query_url = f"https://www.linkedin.com/search/results/people/?keywords={term.replace(' ', '%20')}"
         print("query_url: ", query_url)
-        people = profile_scraper.search_and_scrape(driver, query_url)
+        people = profile_scraper.search_and_scrape(driver, query_url,1,args)
         profile_scraper.save_to_excel(people, filename=f"{term.replace(' ', '_')}.csv")
 
         if args.send:
