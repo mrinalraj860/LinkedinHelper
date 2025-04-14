@@ -1,0 +1,1 @@
+Let's connect on LinkedIn, {{ first_name }}!

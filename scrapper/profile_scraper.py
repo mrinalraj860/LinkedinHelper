@@ -2,6 +2,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import time
 from selenium import webdriver
+from messenger.message_sender import load_template, send_message
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
@@ -49,24 +50,28 @@ def search_and_scrape(driver, query_url, num_pages=1, args=None):
                 time.sleep(5)
 
                 if args and args.connect:
-                    print(f"Attempting to connect with: {user['name']}")
                     try:
-                        connect_button = driver.find_element(By.XPATH, "//button[contains(., 'Connect')]")
-                        try:
-                            connect_button.click()
-                        except:
-                            driver.execute_script("arguments[0].click();", connect_button)
-                        time.sleep(2)
-                        send_button = WebDriverWait(driver, 5).until(
-                            EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Send without a note')]"))
-                        )
-                        send_button.click()
-                        print(f"Connection request sent to {user['name']}")
-                        time.sleep(2)
+                        pending_button = driver.find_element(By.XPATH, "//button[contains(., 'Pending')]")
+                        print(f"Connection request already pending for {user['name']}. Skipping connection.")
                     except NoSuchElementException:
-                        print(f"No connect button found for {user['name']}. Skipping.")
-                    except Exception as e:
-                        print(f"Error trying to connect with {user['name']}: {e}")
+                        print(f"Attempting to connect with: {user['name']}")
+                        try:
+                            connect_button = driver.find_element(By.XPATH, "//button[contains(., 'Connect')]")
+                            try:
+                                connect_button.click()
+                            except:
+                                driver.execute_script("arguments[0].click();", connect_button)
+                            time.sleep(2)
+                            send_button = WebDriverWait(driver, 5).until(
+                                EC.element_to_be_clickable((By.XPATH, "//button[contains(., 'Send without a note')]"))
+                            )
+                            send_button.click()
+                            print(f"Connection request sent to {user['name']}")
+                            time.sleep(2)
+                        except NoSuchElementException:
+                            print(f"No connect button found for {user['name']}. Skipping.")
+                        except Exception as e:
+                            print(f"Error trying to connect with {user['name']}: {e}")
 
                 try:
                     WebDriverWait(driver, 10).until(
@@ -88,7 +93,21 @@ def search_and_scrape(driver, query_url, num_pages=1, args=None):
 
                 soup = BeautifulSoup(driver.page_source, "html.parser")
                 contact_div = soup.find("div", class_="artdeco-modal__content")
+                if args and args.send:
+                    print(f"Sending message to: {user['name']}")
+                    full_name = user.get('name', '')
+                    first_name = full_name.split()[0] if full_name else ''
+                    user['first_name'] = first_name
+                    
+                    try:
+                        subject_template, message_template = load_template("templates/subject.txt", "templates/message.txt")
+                        success = send_message(driver, user, subject_template, message_template)
+                        if success:
+                            print(f"Message sent to {user['name']}")
+                    except Exception as e:
+                        print(f"Failed to send message to {user['name']}: {e}")
 
+                        
                 contact_info = {
                     "email": "", "phone": "", "birthday": "",
                     "linkedin_profile": "", "website": ""
@@ -129,6 +148,10 @@ def search_and_scrape(driver, query_url, num_pages=1, args=None):
                 })
 
             results.append(user)
+            # if there is need to send message
+
+
+
 
         # Go back to search page before clicking "Next"
         print("Returning to search results page to paginate...")
@@ -163,3 +186,4 @@ def save_to_excel(data, filename="data/people.csv"):
     pd.DataFrame(data).to_csv(filename, index=False)
     print(f"\nData saved to: {filename}")
     print(f"Total profiles scraped: {len(data)}")
+

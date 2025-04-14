@@ -1,0 +1,6 @@
+Hi {{ first_name }},
+
+I came across your profile and was really impressed by your work. I'd love to connect and stay in touch!
+
+Best regards,
+Mrinal
