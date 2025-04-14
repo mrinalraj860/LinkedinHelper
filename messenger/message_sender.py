@@ -1,6 +1,9 @@
 from selenium.webdriver.common.by import By
 import time
 from jinja2 import Template
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
 
 def load_template(subject_path, message_path):
     with open(subject_path) as f1, open(message_path) as f2:
@@ -13,43 +16,68 @@ def send_message(driver, person, subject_template, message_template):
     time.sleep(3)
 
     try:
-        driver.find_element(By.CLASS_NAME, "message-anywhere-button").click()
-        time.sleep(2)
-
-        # Attempt InMail message box (contenteditable div)
+        # Click only the primary (blue) 'Message' button
         try:
-            message_box = driver.find_element(By.CSS_SELECTOR, 'div[contenteditable="true"]')
-        except:
-            message_box = driver.find_element(By.TAG_NAME, "textarea")
+            message_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((
+                    By.XPATH,
+                    "//button[contains(@class, 'artdeco-button--primary') and .//span[text()='Message']]"
+                ))
+            )
+            driver.execute_script("arguments[0].click();", message_button)
+            print(" Message button clicked.")
+            time.sleep(5)
+        except Exception as e:
+            print(f" Could not find or click Message button: {e}")
+            return False
 
+        # Try finding the message box
+        try:
+            message_box = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'div[contenteditable="true"]'))
+            )
+        except:
+            try:
+                message_box = driver.find_element(By.TAG_NAME, "textarea")
+            except Exception as e:
+                print(f" Could not find message input: {e}")
+                return False
+
+        # Prepare subject and message content
         subject = subject_template.render(person)
         message = message_template.render(person)
         print(f"Subject: {subject}")
         print(f"Message: {message}")
-        # Try to fill subject if input is present (for InMail)
+
+        # Fill in subject if present (for InMail)
         try:
             subject_input = driver.find_element(By.CSS_SELECTOR, 'input[name="subject"]')
             subject_input.clear()
             subject_input.send_keys(subject)
         except:
-            pass  # Subject field might not exist depending on message type
+            pass  # Subject field might not exist
 
-        # Type the message into the message box
+        # Fill the message
         message_box.click()
         message_box.send_keys(message)
         time.sleep(1)
 
-        # Try to find and click the send button
+        # Click the send button
         try:
-            send_button = driver.find_element(By.XPATH, "//button[contains(., 'Send')]")
+            send_button = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.msg-form__send-btn[type='submit']"))
+            )
             if send_button.is_enabled():
                 send_button.click()
+                print(" Message sent.")
             else:
-                print("Send button is disabled.")
+                print(" Send button is disabled.")
         except Exception as e:
-            print(f"Could not find or click send button: {e}")
+            print(f" Could not find or click send button: {e}")
+            return False
 
         return True
+
     except Exception as e:
-        print(f"Failed to message {person['name']}: {e}")
+        print(f" Failed to message {person['name']}: {e}")
         return False
